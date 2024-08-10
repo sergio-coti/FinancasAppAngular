@@ -1,0 +1,121 @@
+﻿@* Mapeamento da rota do componente *@
+@page "/criar-usuario"
+
+@* Injeção de dependência *@
+@inject HttpClient Http
+
+@using UsuariosApp.WEB.Responses
+@using UsuariosApp.WEB.ViewModels
+
+<div class="card m-3">
+    <div class="card-body">
+
+        <h2>Criação de usuário</h2>
+        <p>Informe os seus dados para criar uma conta de acesso.</p>
+        <hr/>
+
+        @* Estrutura do formulário *@
+        <EditForm Model="@model" OnValidSubmit="@OnSubmit">
+
+            @* Hablitando a validação do formulário *@
+            <DataAnnotationsValidator/>
+
+            <div class="mb-2">
+                @if(!string.IsNullOrEmpty(mensagemSucesso))
+                {
+                    <div class="alert alert-success">
+                        <strong>@mensagemSucesso</strong>
+                    </div>
+                }
+                else if(!string.IsNullOrEmpty(mensagemErro))
+                {
+                    <div class="alert alert-danger">
+                        <strong>@mensagemErro</strong>
+                    </div>
+                }
+            </div>
+
+            <div class="mb-2">
+                <label>Nome do usuário:</label>
+                <InputText class="form-control" @bind-Value="model.Nome"/>
+                <span class="text-danger">
+                    <ValidationMessage For="@(() => model.Nome)"/>
+                </span>
+            </div>
+
+            <div class="mb-2">
+                <label>Email do usuário:</label>
+                <InputText class="form-control" @bind-Value="model.Email" />
+                <span class="text-danger">
+                    <ValidationMessage For="@(() => model.Email)" />
+                </span>
+            </div>
+
+            <div class="mb-2">
+                <label>Senha do usuário:</label>
+                <InputText type="password" class="form-control" @bind-Value="model.Senha" />
+                <span class="text-danger">
+                    <ValidationMessage For="@(() => model.Senha)" />
+                </span>
+            </div>
+
+            <div class="mb-2">
+                <label>Confirme a senha:</label>
+                <InputText type="password" class="form-control" @bind-Value="model.SenhaConfirmacao" />
+                <span class="text-danger">
+                    <ValidationMessage For="@(() => model.SenhaConfirmacao)" />
+                </span>
+            </div>
+
+            <div class="mb-2 d-grid">
+                <input type="submit" class="btn btn-primary" value="Realizar Cadastro"/>
+            </div>
+
+        </EditForm>
+
+    </div>
+</div>
+
+@code {
+    //Declarando a classe ViewModel utilizada para captura do formulário
+    CriarUsuarioViewModel model = new CriarUsuarioViewModel();
+
+    //atributos
+    private string mensagemSucesso = string.Empty;
+    private string mensagemErro = string.Empty;
+
+    //método executado no evento de SUBMIT do formulário
+    protected async Task OnSubmit()
+    {
+        //limpar o conteúdo das mensagens
+        mensagemSucesso = string.Empty;
+        mensagemErro = string.Empty;
+
+        try
+        {
+            //fazendo a chamada para o endpoint da api
+            var result = await Http.PostAsJsonAsync("criar", model);
+
+            //verificando se a resposta obtida foi sucesso
+            if(result.IsSuccessStatusCode)
+            {
+                //deserializar os dados obtidos da API
+                var response = await result.Content.ReadFromJsonAsync<CriarUsuarioResponse>();
+                //exibir os dados na página
+                mensagemSucesso = $"Usuário cadastrado com sucesso em {response?.DataHoraCadastro}! ID: {response?.Id}";
+                //limpar os campos do formulário
+                model = new CriarUsuarioViewModel();
+            }
+            else
+            {
+                //deserializando a mensagem de erro obtida da API
+                var response = await result.Content.ReadFromJsonAsync<ErrorResponse>();
+                mensagemErro = response.Message;
+            }
+        }
+        catch(Exception e)
+        {
+            mensagemErro = $"Falha ao cadastrar usuário: {e.Message}";
+        }
+    }
+}

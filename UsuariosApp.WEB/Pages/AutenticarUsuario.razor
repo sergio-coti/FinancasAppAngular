@@ -1,0 +1,89 @@
+﻿@* Mapeamento da rota do componente *@
+@page "/"
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject AuthService Auth
+
+@using UsuariosApp.WEB.Responses
+@using UsuariosApp.WEB.Services
+@using UsuariosApp.WEB.ViewModels
+
+<div class="card m-3">
+    <div class="card-body">
+
+        <h2>Autenticação de usuário</h2>
+        <p>Entre com as suas credenciais de acesso.</p>
+        <hr/>
+
+        @if(!string.IsNullOrEmpty(mensagemErro))
+        {
+            <div class="alert alert-danger">
+                <strong>@mensagemErro</strong>
+            </div>
+        }
+
+        <EditForm Model="model" OnValidSubmit="OnSubmit">
+
+            <DataAnnotationsValidator/>
+
+            <div class="mb-3">
+                <label>Email de acesso:</label>
+                <InputText class="form-control" @bind-Value="model.Email" />
+                <span class="text-danger">
+                    <ValidationMessage For="@(() => model.Email)" />
+                </span>
+            </div>
+
+            <div class="mb-3">
+                <label>Senha de acesso:</label>
+                <InputText type="password" class="form-control" @bind-Value="model.Senha" />
+                <span class="text-danger">
+                    <ValidationMessage For="@(() => model.Senha)" />
+                </span>
+            </div>
+
+            <div class="mb-3 d-grid">
+               <input type="submit" class="btn btn-primary" value="Acessar Sistema"/>
+            </div>
+
+        </EditForm>
+
+    </div>
+</div>
+
+@code {
+
+    //modelo de dados para capturar o formulário
+    AutenticarUsuarioViewModel model = new AutenticarUsuarioViewModel();
+
+    private string mensagemErro = string.Empty;
+
+    //função para capturar o submit do formulário
+    public async Task OnSubmit()
+    {
+        try
+        {
+            var result = await Http.PostAsJsonAsync("autenticar", model);
+            if (result.IsSuccessStatusCode)
+            {
+                var response = await result.Content.ReadFromJsonAsync<AutenticarUsuarioResponse>();
+
+                //gravar os dados do usuário autenticado na local storage
+                Auth.SignIn(response);
+
+                //redirecionando o usuário..
+                Navigation.NavigateTo("/boas-vindas", true);
+            }
+            else
+            {
+                var response = await result.Content.ReadFromJsonAsync<ErrorResponse>();
+                mensagemErro = response.Message;
+            }
+        }
+        catch(Exception e)
+        {
+            mensagemErro = e.Message;
+        }
+    }
+}

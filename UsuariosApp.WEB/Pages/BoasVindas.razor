@@ -1,0 +1,64 @@
+﻿@page "/boas-vindas"
+
+@using UsuariosApp.WEB.Services
+
+@inject AuthService Auth
+@inject NavigationManager Navigation
+
+<div class="card">
+    <div class="card-body">
+
+        <h2>Seja bem vindo ao Sistema!</h2>
+        <p>Informações do usuário autenticado:</p>
+        <hr />
+
+        <div class="mb-3">
+            Nome do usuário autenticado: <strong>@nomeUsuario</strong>
+        </div>
+
+        <div class="mb-3">
+            Email do usuário: <strong>@emailUsuario</strong>
+        </div>
+
+        <div class="mb-3">
+            <button class="btn btn-outline-danger" @onclick="(() => Sair())">
+                Sair do Sistema
+            </button>
+        </div>
+
+    </div>
+</div>
+
+@code {
+
+    private string nomeUsuario = string.Empty;
+    private string emailUsuario = string.Empty;
+
+    //método executado sempre que a página for aberta
+    protected override async Task OnInitializedAsync()
+    {
+        //capturar os dados do usuário autenticado
+        var response = await Auth.GetData();
+
+        //verificar se há um usuário autenticado
+        if(response != null)
+        {
+            nomeUsuario = response.Nome;
+            emailUsuario = response.Email;
+        }
+        else
+        {
+            //navegar de volta para a página inicial
+            Navigation.NavigateTo("/", true);
+        }
+    }
+
+    //método para o usuário 'sair' do sistema
+    protected async Task Sair()
+    {
+        //apagar os dados da local storage
+        await Auth.SignOut();
+        //navegar de volta para a página inicial
+        Navigation.NavigateTo("/", true);
+    }
+}
